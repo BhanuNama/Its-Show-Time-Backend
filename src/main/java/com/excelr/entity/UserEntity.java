@@ -37,4 +37,7 @@ public class UserEntity {
 
     @Column(length = 100)
     private String location;
+
+    @Column(length = 500)
+    private String profileImageUrl;
 }
