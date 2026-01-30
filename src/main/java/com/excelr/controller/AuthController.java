@@ -2,18 +2,22 @@ package com.excelr.controller;
 
 import com.excelr.entity.UserEntity;
 import com.excelr.repository.UserRepository;
+import com.excelr.security.JwtUtils;
 import com.excelr.service.impl.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Simple authentication controller for registering and logging in users.
- *
- * NOTE:
- * - This is intentionally minimal: no JWT, no roles/guards yet.
- * - Frontend can call these endpoints instead of using localStorage-only auth.
+ * Authentication controller with JWT support.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -23,6 +27,9 @@ public class AuthController {
 
     private final UserServiceImpl userService;
     private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+    private final UserDetailsService userDetailsService;
 
     @PostMapping("/register")
     public ResponseEntity<UserEntity> register(@RequestBody RegisterRequest request) {
@@ -33,7 +40,7 @@ public class AuthController {
         UserEntity user = UserEntity.builder()
                 .name(request.name())
                 .email(request.email())
-                .password(request.password()) // In real apps, hash this!
+                .password(request.password()) // Service handles encoding
                 .role(request.role())
                 .theatreName(request.theatreName())
                 .phone(request.phone())
@@ -41,16 +48,31 @@ public class AuthController {
                 .build();
 
         UserEntity saved = userService.registerUser(user);
-        // Do not expose password back to client
         saved.setPassword(null);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserEntity> login(@RequestBody LoginRequest request) {
-        UserEntity user = userService.loginUser(request.email(), request.password());
-        user.setPassword(null);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.email());
+        final UserEntity user = userRepository.findByEmail(request.email()).orElseThrow();
+
+        // Add extra claims if needed
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("id", user.getId());
+        extraClaims.put("role", user.getRole());
+
+        String token = jwtUtils.generateToken(extraClaims, userDetails);
+
+        return ResponseEntity.ok(new AuthResponse(
+                token,
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole()));
     }
 
     @PutMapping("/user/{userId}")
@@ -58,10 +80,14 @@ public class AuthController {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (request.name() != null) user.setName(request.name());
-        if (request.phone() != null) user.setPhone(request.phone());
-        if (request.location() != null) user.setLocation(request.location());
-        if (request.profileImageUrl() != null) user.setProfileImageUrl(request.profileImageUrl());
+        if (request.name() != null)
+            user.setName(request.name());
+        if (request.phone() != null)
+            user.setPhone(request.phone());
+        if (request.location() != null)
+            user.setLocation(request.location());
+        if (request.profileImageUrl() != null)
+            user.setProfileImageUrl(request.profileImageUrl());
 
         UserEntity updated = userRepository.save(user);
         updated.setPassword(null);
@@ -76,28 +102,35 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 
-    // ===== Request DTOs kept simple and local to controller =====
+    // ===== DTOs =====
 
     public record RegisterRequest(
             String name,
             String email,
             String password,
-            String role,          // "USER" or "OWNER"
+            String role,
             String theatreName,
             String phone,
-            String location
-    ) {}
+            String location) {
+    }
 
     public record LoginRequest(
             String email,
-            String password
-    ) {}
+            String password) {
+    }
+
+    public record AuthResponse(
+            String token,
+            Long id,
+            String name,
+            String email,
+            String role) {
+    }
 
     public record UpdateUserRequest(
             String name,
             String phone,
             String location,
-            String profileImageUrl
-    ) {}
+            String profileImageUrl) {
+    }
 }
-

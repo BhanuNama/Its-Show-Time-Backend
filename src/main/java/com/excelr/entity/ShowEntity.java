@@ -21,16 +21,16 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class ShowEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "owner"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "owner" })
     private VenueEntity venue; // FK to venues
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -66,4 +66,3 @@ public class ShowEntity {
     @CreationTimestamp
     private LocalDateTime createdAt;
 }
-
