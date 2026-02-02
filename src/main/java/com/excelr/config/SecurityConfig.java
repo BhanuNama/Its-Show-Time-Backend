@@ -50,7 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/bookings/public/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events/**", "/api/shows/**",
                                 "/api/venues/**", "/api/bookings/show/*/blocked-seats",
-                                "/api/bookings/event/*/zone-availability")
+                                "/api/bookings/event/*/zone-availability", "/api/ratings/**")
                         .permitAll() // Public GET endpoints
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
