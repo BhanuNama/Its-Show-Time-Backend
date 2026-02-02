@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -38,6 +40,15 @@ public class BookingController {
         private final ShowRepository showRepository;
         private final EventRepository eventRepository;
         private final ObjectMapper objectMapper;
+
+        private UserEntity requireAuthenticatedUser() {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth == null || auth.getName() == null) {
+                        throw new IllegalArgumentException("Unauthorized");
+                }
+                return userRepository.findByEmail(auth.getName())
+                                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        }
 
         @PostMapping("/movie")
         public ResponseEntity<BookingEntity> createMovieBooking(@RequestBody MovieBookingRequest request) {
@@ -117,11 +128,45 @@ public class BookingController {
         public ResponseEntity<BookingEntity> getBookingById(@PathVariable Long id) {
                 BookingEntity booking = bookingRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + id));
+                UserEntity authUser = requireAuthenticatedUser();
+                if (booking.getUser() == null || authUser.getId() == null || !authUser.getId().equals(booking.getUser().getId())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
                 return ResponseEntity.ok(booking);
+        }
+
+        /**
+         * Public booking lookup by bookingCode for QR scans.
+         * Returns a limited payload (no user info).
+         *
+         * Example: GET /api/bookings/public/BK8F3KZ1P9Q2X
+         */
+        @GetMapping("/public/{bookingCode}")
+        public ResponseEntity<PublicBookingResponse> getBookingByCodePublic(@PathVariable String bookingCode) {
+                BookingEntity booking = bookingRepository.findByBookingCode(bookingCode)
+                                .orElseThrow(() -> new IllegalArgumentException("Booking not found with code: " + bookingCode));
+
+                // Do not leak user info in public ticket scans
+                return ResponseEntity.ok(new PublicBookingResponse(
+                                booking.getId(),
+                                booking.getBookingCode(),
+                                booking.getType(),
+                                booking.getShow(),
+                                booking.getEvent(),
+                                booking.getEventDateId(),
+                                booking.getBookingDetails(),
+                                booking.getTotalAmount(),
+                                booking.getPaymentMethod(),
+                                booking.getStatus(),
+                                booking.getBookedAt()));
         }
 
         @GetMapping("/user/{userId}")
         public ResponseEntity<List<BookingEntity>> getBookingsForUser(@PathVariable Long userId) {
+                UserEntity authUser = requireAuthenticatedUser();
+                if (authUser.getId() == null || !authUser.getId().equals(userId)) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
                 UserEntity user = userRepository.findById(userId)
                                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 return ResponseEntity.ok(bookingService.getBookingsForUser(user));
@@ -134,6 +179,7 @@ public class BookingController {
                 List<BookingSummary> result = all.stream()
                                 .map(b -> new BookingSummary(
                                                 b.getId(),
+                                                b.getBookingCode(),
                                                 b.getUser() != null ? b.getUser().getName() : null,
                                                 b.getType(),
                                                 b.getShow() != null
@@ -151,7 +197,21 @@ public class BookingController {
                                                                                                 : null)
                                                                 : null,
                                                 b.getEvent() != null
-                                                                ? new EventInfo(b.getEvent().getId())
+                                                                ? new EventInfo(
+                                                                                b.getEvent().getId(),
+                                                                                b.getEvent().getTitle(),
+                                                                                b.getEvent().getEventConfig(),
+                                                                                b.getEvent().getVenue() != null
+                                                                                                ? new VenueInfo(
+                                                                                                                b.getEvent()
+                                                                                                                                .getVenue()
+                                                                                                                                .getId(),
+                                                                                                                b.getEvent()
+                                                                                                                                .getVenue()
+                                                                                                                                .getName())
+                                                                                                : null,
+                                                                                b.getEvent().getAddress(),
+                                                                                b.getEvent().getPosterUrl())
                                                                 : null,
                                                 b.getBookingDetails(),
                                                 b.getTotalAmount(),
@@ -298,17 +358,37 @@ public class BookingController {
         }
 
         public record EventInfo(
-                        Long id) {
+                        Long id,
+                        String title,
+                        String eventConfig,
+                        VenueInfo venue,
+                        String address,
+                        String posterUrl) {
         }
 
         public record BookingSummary(
                         Long id,
+                        String bookingCode,
                         String userName,
                         BookingType type,
                         ShowInfo show,
                         EventInfo event,
                         String bookingDetails,
                         BigDecimal totalAmount,
+                        Status status,
+                        LocalDateTime bookedAt) {
+        }
+
+        public record PublicBookingResponse(
+                        Long id,
+                        String bookingCode,
+                        BookingType type,
+                        ShowEntity show,
+                        EventEntity event,
+                        String eventDateId,
+                        String bookingDetails,
+                        BigDecimal totalAmount,
+                        String paymentMethod,
                         Status status,
                         LocalDateTime bookedAt) {
         }

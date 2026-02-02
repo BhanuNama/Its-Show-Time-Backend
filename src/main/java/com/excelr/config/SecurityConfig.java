@@ -2,6 +2,7 @@ package com.excelr.config;
 
 import com.excelr.security.JwtAuthenticationFilter;
 import com.excelr.service.CustomUserDetailsService;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,9 +38,19 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        // Allow error dispatches; otherwise missing static resources can surface as 403
+                        .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+                        .requestMatchers("/error").permitAll()
+                        // Static uploads must be publicly accessible (posters/profile images)
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
+                        // Proxy images for ticket export (avoid CORS)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/upload/tmdb-proxy").permitAll()
+                        // Public QR ticket lookup
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/bookings/public/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events/**", "/api/shows/**",
-                                "/api/venues/**")
+                                "/api/venues/**", "/api/bookings/show/*/blocked-seats",
+                                "/api/bookings/event/*/zone-availability")
                         .permitAll() // Public GET endpoints
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

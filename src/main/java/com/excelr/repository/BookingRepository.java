@@ -33,5 +33,10 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
     // Find bookings where show is in list and status matches
     List<BookingEntity> findByShowInAndStatus(List<ShowEntity> shows, Status status);
 
+    boolean existsByBookingCode(String bookingCode);
+
+    @EntityGraph(attributePaths = {"user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event", "event.venue"})
+    Optional<BookingEntity> findByBookingCode(String bookingCode);
+
 }
 

@@ -26,6 +26,13 @@ public class BookingEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Public booking reference shown to users (non-sequential).
+     * Example: BK8F3KZ1P9Q2X
+     */
+    @Column(nullable = false, unique = true, length = 32)
+    private String bookingCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
@@ -47,7 +54,7 @@ public class BookingEntity {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "owner"})
     private EventEntity event; // FK to events (nullable)
 
-    @Column(length = 10)
+    @Column(length = 50)
     private String eventDateId; // For events: which date from eventConfig.dates
 
     @Column(columnDefinition = "TEXT", nullable = false)
