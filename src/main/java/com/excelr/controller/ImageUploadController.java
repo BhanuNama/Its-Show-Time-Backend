@@ -6,12 +6,21 @@ import com.excelr.repository.EventRepository;
 import com.excelr.repository.UserRepository;
 import com.excelr.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/upload")
@@ -102,6 +111,51 @@ public class ImageUploadController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body("Failed to upload image: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Proxy TMDB image downloads through backend to avoid browser CORS issues
+     * when exporting ticket UI to an image.
+     *
+     * Allowed host: image.tmdb.org
+     * Example: /api/upload/tmdb-proxy?url=https://image.tmdb.org/t/p/w500/xyz.jpg
+     */
+    @GetMapping("/tmdb-proxy")
+    public ResponseEntity<byte[]> proxyTmdbImage(@RequestParam("url") String url) {
+        try {
+            URI uri = URI.create(url);
+            if (uri.getScheme() == null || !"https".equalsIgnoreCase(uri.getScheme())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new byte[0]);
+            }
+            if (uri.getHost() == null || !"image.tmdb.org".equalsIgnoreCase(uri.getHost())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new byte[0]);
+            }
+
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(8))
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+
+            HttpRequest req = HttpRequest.newBuilder(uri)
+                    .timeout(Duration.ofSeconds(15))
+                    .header("User-Agent", "Its-Show-Time")
+                    .GET()
+                    .build();
+
+            HttpResponse<byte[]> resp = client.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            if (resp.statusCode() != 200 || resp.body() == null || resp.body().length == 0) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new byte[0]);
+            }
+
+            String contentType = resp.headers().firstValue("content-type").orElse("image/jpeg");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.CONTENT_TYPE, contentType);
+            headers.setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic());
+
+            return new ResponseEntity<>(resp.body(), headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new byte[0]);
         }
     }
 }

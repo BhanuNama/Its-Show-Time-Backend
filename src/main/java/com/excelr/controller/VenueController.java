@@ -37,13 +37,22 @@ public class VenueController {
         UserEntity owner = userRepository.findById(request.ownerId())
                 .orElseThrow(() -> new IllegalArgumentException("Owner not found with id: " + request.ownerId()));
 
+        // Pincode: strictly 6-digit numeric (India)
+        String pincode = request.pincode() != null ? request.pincode().trim() : "";
+        if (pincode.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).header("X-Error", "Pincode is required").body(null);
+        }
+        if (!pincode.matches("^\\d{6}$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).header("X-Error", "Pincode must be exactly 6 digits").body(null);
+        }
+
         VenueEntity venue = VenueEntity.builder()
                 .owner(owner)
                 .name(request.name())
                 .type(VenueType.valueOf(request.type()))
                 .location(request.location())
                 .address(request.address())
-                .pincode(request.pincode())
+                .pincode(pincode)
                 .country(request.country())
                 .capacity(request.capacity())
                 .amenities(request.amenities())
@@ -51,6 +60,46 @@ public class VenueController {
 
         VenueEntity saved = venueService.createVenue(venue, owner);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateVenue(
+            @PathVariable Long id,
+            @RequestBody CreateVenueRequest request
+    ) {
+        Optional<VenueEntity> venueOpt = venueRepository.findById(id);
+        if (venueOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        VenueEntity venue = venueOpt.get();
+
+        // Ownership guard (required for edit)
+        if (request.ownerId() == null || venue.getOwner() == null || venue.getOwner().getId() == null
+                || !venue.getOwner().getId().equals(request.ownerId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Not allowed to edit this venue");
+        }
+
+        // Pincode: strictly 6-digit numeric (India)
+        String pincode = request.pincode() != null ? request.pincode().trim() : "";
+        if (pincode.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).header("X-Error", "Pincode is required").body(null);
+        }
+        if (!pincode.matches("^\\d{6}$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).header("X-Error", "Pincode must be exactly 6 digits").body(null);
+        }
+
+        venue.setName(request.name());
+        venue.setType(VenueType.valueOf(request.type()));
+        venue.setLocation(request.location());
+        venue.setAddress(request.address());
+        venue.setPincode(pincode);
+        venue.setCountry(request.country());
+        venue.setCapacity(request.capacity());
+        venue.setAmenities(request.amenities());
+
+        VenueEntity saved = venueRepository.save(venue);
+        return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/owner/{ownerId}")
