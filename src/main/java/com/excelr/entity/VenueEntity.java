@@ -45,7 +45,8 @@ public class VenueEntity {
     @Column(nullable = false, length = 300)
     private String address;
 
-    @Column(nullable = false, length = 10)
+    // Postal codes can vary; keep room to avoid truncation
+    @Column(nullable = false, length = 20)
     private String pincode;
 
     @Column(nullable = false, length = 50)

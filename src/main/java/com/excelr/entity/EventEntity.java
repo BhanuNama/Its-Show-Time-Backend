@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "events")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,9 +27,9 @@ public class EventEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "owner"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "owner" })
     private VenueEntity venue; // FK to venues
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -62,4 +62,3 @@ public class EventEntity {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
-
