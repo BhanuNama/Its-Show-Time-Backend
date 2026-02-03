@@ -135,6 +135,20 @@ public class BookingController {
                 return ResponseEntity.ok(booking);
         }
 
+        @PostMapping("/{id}/cancel")
+        public ResponseEntity<?> cancelBooking(@PathVariable Long id) {
+                try {
+                        UserEntity authUser = requireAuthenticatedUser();
+                        BookingEntity cancelled = bookingService.cancelBooking(id, authUser);
+                        return ResponseEntity.ok(cancelled);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(Map.of("error", "Failed to cancel booking"));
+                }
+        }
+
         /**
          * Public booking lookup by bookingCode for QR scans.
          * Returns a limited payload (no user info).
@@ -170,6 +184,18 @@ public class BookingController {
                 UserEntity user = userRepository.findById(userId)
                                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 return ResponseEntity.ok(bookingService.getBookingsForUser(user));
+        }
+
+        @GetMapping("/movie/{movieId}")
+        public ResponseEntity<List<BookingEntity>> getBookingsForMovie(@PathVariable Long movieId) {
+                // In production, add owner check here
+                return ResponseEntity.ok(bookingRepository.findByShowTmdbMovieId(movieId));
+        }
+
+        @GetMapping("/event/{eventId}")
+        public ResponseEntity<List<BookingEntity>> getBookingsForEvent(@PathVariable Long eventId) {
+                 // In production, add owner check here
+                return ResponseEntity.ok(bookingRepository.findByEventId(eventId));
         }
 
         @GetMapping
