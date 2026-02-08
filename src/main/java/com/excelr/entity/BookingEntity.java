@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class BookingEntity {
 
     @Id
@@ -35,7 +35,8 @@ public class BookingEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "password" })
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private UserEntity user; // FK to users
 
     @Enumerated(EnumType.STRING)
@@ -45,13 +46,13 @@ public class BookingEntity {
     // For MOVIE bookings
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "show_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private ShowEntity show; // FK to shows (nullable)
 
     // For EVENT bookings
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "owner"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "owner" })
     private EventEntity event; // FK to events (nullable)
 
     @Column(length = 50)
@@ -80,4 +81,3 @@ public class BookingEntity {
     @CreationTimestamp
     private LocalDateTime createdAt;
 }
-

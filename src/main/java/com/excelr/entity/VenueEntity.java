@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "venues")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,6 +30,7 @@ public class VenueEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     @JsonIgnore // avoid serializing lazy owner proxy to clients
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private UserEntity owner;
 
     @Column(nullable = false, length = 200)
@@ -64,4 +65,3 @@ public class VenueEntity {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
-

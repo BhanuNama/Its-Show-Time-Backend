@@ -92,7 +92,17 @@
 			<version>0.12.5</version>
 			<scope>runtime</scope>
 		</dependency>
+
+
 		
+
+
+		<!-- SMS (Twilio) -->
+		<dependency>
+			<groupId>com.twilio.sdk</groupId>
+			<artifactId>twilio</artifactId>
+			<version>10.1.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

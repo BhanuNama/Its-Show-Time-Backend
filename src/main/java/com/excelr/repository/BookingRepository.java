@@ -13,43 +13,55 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
 
-    @EntityGraph(attributePaths = {"user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event", "event.venue"})
-    List<BookingEntity> findByUser(UserEntity user);
+        @EntityGraph(attributePaths = { "user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event",
+                        "event.venue" })
+        List<BookingEntity> findByUser(UserEntity user);
 
-    long countByShowIn(List<ShowEntity> shows);
-    
-    @EntityGraph(attributePaths = {"user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event", "event.venue"})
-    Optional<BookingEntity> findById(Long id);
+        long countByShowIn(List<ShowEntity> shows);
 
-    // Find bookings by show ID and status
-    List<BookingEntity> findByShowIdAndStatus(Long showId, Status status);
+        @EntityGraph(attributePaths = { "user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event",
+                        "event.venue" })
+        Optional<BookingEntity> findById(Long id);
 
-    // Find bookings by event ID, event date ID, and status
-    List<BookingEntity> findByEventIdAndEventDateIdAndStatus(Long eventId, String eventDateId, Status status);
-    
-    // Find bookings by event and status
-    List<BookingEntity> findByEventAndStatus(EventEntity event, Status status);
-    
-    // Find bookings where show is in list and status matches
-    List<BookingEntity> findByShowInAndStatus(List<ShowEntity> shows, Status status);
+        // Find bookings by show ID and status
+        List<BookingEntity> findByShowIdAndStatus(Long showId, Status status);
 
-    boolean existsByBookingCode(String bookingCode);
+        // Find bookings by event ID, event date ID, and status
+        List<BookingEntity> findByEventIdAndEventDateIdAndStatus(Long eventId, String eventDateId, Status status);
 
-    @EntityGraph(attributePaths = {"user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event", "event.venue"})
-    Optional<BookingEntity> findByBookingCode(String bookingCode);
+        // Find bookings by event and status
+        List<BookingEntity> findByEventAndStatus(EventEntity event, Status status);
 
-    // Analytics queries
-    @EntityGraph(attributePaths = {"show", "show.venue", "show.schedule"})
-    List<BookingEntity> findByShowTmdbMovieIdAndStatus(Long tmdbMovieId, Status status);
+        // Find bookings where show is in list and status matches
+        List<BookingEntity> findByShowInAndStatus(List<ShowEntity> shows, Status status);
 
-    @EntityGraph(attributePaths = {"event", "event.venue"})
-    List<BookingEntity> findByEventIdAndStatus(Long eventId, Status status);
+        List<BookingEntity> findByShowIn(List<ShowEntity> shows);
 
-    // Unfiltered for list view
-    @EntityGraph(attributePaths = {"show", "show.venue", "show.schedule"})
-    List<BookingEntity> findByShowTmdbMovieId(Long tmdbMovieId);
+        boolean existsByBookingCode(String bookingCode);
 
-    @EntityGraph(attributePaths = {"event", "event.venue"})
-    List<BookingEntity> findByEventId(Long eventId);
+        @EntityGraph(attributePaths = { "user", "show", "show.venue", "show.schedule", "show.schedule.venue", "event",
+                        "event.venue" })
+        Optional<BookingEntity> findByBookingCode(String bookingCode);
+
+        // Analytics queries
+        @EntityGraph(attributePaths = { "show", "show.venue", "show.schedule" })
+        List<BookingEntity> findByShowTmdbMovieIdAndStatus(Long tmdbMovieId, Status status);
+
+        @EntityGraph(attributePaths = { "event", "event.venue" })
+        List<BookingEntity> findByEventIdAndStatus(Long eventId, Status status);
+
+        // Unfiltered for list view
+        @EntityGraph(attributePaths = { "show", "show.venue", "show.schedule" })
+        List<BookingEntity> findByShowTmdbMovieId(Long tmdbMovieId);
+
+        @EntityGraph(attributePaths = { "event", "event.venue" })
+        List<BookingEntity> findByEventId(Long eventId);
+
+        // Owner-specific analytics
+        @EntityGraph(attributePaths = { "show", "show.venue", "show.schedule" })
+        List<BookingEntity> findByShowTmdbMovieIdAndShowVenueOwnerIdAndStatus(Long tmdbMovieId, Long ownerId,
+                        Status status);
+
+        @EntityGraph(attributePaths = { "event", "event.venue" })
+        List<BookingEntity> findByEventIdAndEventOwnerIdAndStatus(Long eventId, Long ownerId, Status status);
 }
-

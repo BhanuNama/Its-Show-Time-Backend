@@ -19,10 +19,11 @@ public class WishlistEntity {
     @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @Column(nullable = false)
-    private String itemId; 
+    private String itemId;
 
     @Column(nullable = false)
     private String type; // "movie" or "event"
@@ -33,14 +34,14 @@ public class WishlistEntity {
     @Column(length = 500)
     private String poster;
 
-    private Double rating; 
+    private Double rating;
 
-    private String duration; 
+    private String duration;
 
     @Column(length = 500)
-    private String genre; 
+    private String genre;
 
-    private String venue; 
+    private String venue;
 
-    private String date; 
+    private String date;
 }

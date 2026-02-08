@@ -16,12 +16,14 @@ public class AnalyticsController {
     private final BookingServiceImpl bookingService;
 
     @GetMapping("/movie/{movieId}")
-    public ResponseEntity<Map<String, Object>> getMovieAnalytics(@PathVariable Long movieId) {
-        return ResponseEntity.ok(bookingService.getMovieAnalytics(movieId));
+    public ResponseEntity<Map<String, Object>> getMovieAnalytics(@PathVariable Long movieId,
+            @RequestParam(required = false) Long ownerId) {
+        return ResponseEntity.ok(bookingService.getMovieAnalytics(movieId, ownerId));
     }
 
     @GetMapping("/event/{eventId}")
-    public ResponseEntity<Map<String, Object>> getEventAnalytics(@PathVariable Long eventId) {
-        return ResponseEntity.ok(bookingService.getEventAnalytics(eventId));
+    public ResponseEntity<Map<String, Object>> getEventAnalytics(@PathVariable Long eventId,
+            @RequestParam(required = false) Long ownerId) {
+        return ResponseEntity.ok(bookingService.getEventAnalytics(eventId, ownerId));
     }
 }
