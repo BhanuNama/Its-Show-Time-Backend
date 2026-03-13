@@ -129,7 +129,8 @@ public class BookingController {
                 BookingEntity booking = bookingRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + id));
                 UserEntity authUser = requireAuthenticatedUser();
-                if (booking.getUser() == null || authUser.getId() == null || !authUser.getId().equals(booking.getUser().getId())) {
+                if (booking.getUser() == null || authUser.getId() == null
+                                || !authUser.getId().equals(booking.getUser().getId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                 }
                 return ResponseEntity.ok(booking);
@@ -158,7 +159,8 @@ public class BookingController {
         @GetMapping("/public/{bookingCode}")
         public ResponseEntity<PublicBookingResponse> getBookingByCodePublic(@PathVariable String bookingCode) {
                 BookingEntity booking = bookingRepository.findByBookingCode(bookingCode)
-                                .orElseThrow(() -> new IllegalArgumentException("Booking not found with code: " + bookingCode));
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Booking not found with code: " + bookingCode));
 
                 // Do not leak user info in public ticket scans
                 return ResponseEntity.ok(new PublicBookingResponse(
@@ -187,14 +189,22 @@ public class BookingController {
         }
 
         @GetMapping("/movie/{movieId}")
-        public ResponseEntity<List<BookingEntity>> getBookingsForMovie(@PathVariable Long movieId) {
-                // In production, add owner check here
+        public ResponseEntity<List<BookingEntity>> getBookingsForMovie(@PathVariable Long movieId,
+                        @RequestParam(required = false) Long ownerId) {
+                if (ownerId != null) {
+                        return ResponseEntity.ok(bookingRepository.findByShowTmdbMovieIdAndShowVenueOwnerIdAndStatus(
+                                        movieId, ownerId, Status.CONFIRMED));
+                }
                 return ResponseEntity.ok(bookingRepository.findByShowTmdbMovieId(movieId));
         }
 
         @GetMapping("/event/{eventId}")
-        public ResponseEntity<List<BookingEntity>> getBookingsForEvent(@PathVariable Long eventId) {
-                 // In production, add owner check here
+        public ResponseEntity<List<BookingEntity>> getBookingsForEvent(@PathVariable Long eventId,
+                        @RequestParam(required = false) Long ownerId) {
+                if (ownerId != null) {
+                        return ResponseEntity.ok(bookingRepository.findByEventIdAndEventOwnerIdAndStatus(eventId,
+                                        ownerId, Status.CONFIRMED));
+                }
                 return ResponseEntity.ok(bookingRepository.findByEventId(eventId));
         }
 

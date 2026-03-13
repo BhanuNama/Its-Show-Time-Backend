@@ -35,6 +35,7 @@ public class EventEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     @JsonIgnore // avoid serializing lazy owner proxy to clients
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private UserEntity owner; // FK to users
 
     @Column(nullable = false, length = 200)

@@ -13,5 +13,7 @@ public interface ShowRepository extends JpaRepository<ShowEntity, Long> {
 
     List<ShowEntity> findByVenueAndShowDateAndTmdbMovieId(VenueEntity venue, LocalDate showDate, Long tmdbMovieId);
 
-}
+    List<ShowEntity> findByVenue_OwnerId(Long ownerId);
 
+    List<ShowEntity> findByTmdbMovieIdAndVenue_OwnerId(Long tmdbMovieId, Long ownerId);
+}

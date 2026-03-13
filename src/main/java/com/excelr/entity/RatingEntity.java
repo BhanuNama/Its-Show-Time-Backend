@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ratings", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "item_id", "item_type"})
+        @UniqueConstraint(columnNames = { "user_id", "item_id", "item_type" })
 })
 @Getter
 @Setter
@@ -25,7 +25,8 @@ public class RatingEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "password" })
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @Column(name = "item_id", nullable = false)

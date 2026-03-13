@@ -30,7 +30,7 @@ public class UserEntity {
 
     @Column(length = 150)
     private String theatreName; // only for OWNER
-    
+
     // TODO: Make phone NOT NULL + UNIQUE when OTP authentication is implemented
     @Column(length = 20)
     private String phone;
@@ -40,4 +40,25 @@ public class UserEntity {
 
     @Column(length = 500)
     private String profileImageUrl;
+
+    // Relationships for cascading deletes from application side
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<VenueEntity> venues;
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<EventEntity> events;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<BookingEntity> bookings;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<WishlistEntity> wishlist;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<RatingEntity> ratings;
 }

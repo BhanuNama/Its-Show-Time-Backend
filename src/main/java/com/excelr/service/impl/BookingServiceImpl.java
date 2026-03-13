@@ -59,7 +59,7 @@ public class BookingServiceImpl {
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + bookingId));
 
         if (!booking.getUser().getId().equals(user.getId())) {
-             throw new IllegalArgumentException("Access denied: You can only cancel your own bookings");
+            throw new IllegalArgumentException("Access denied: You can only cancel your own bookings");
         }
 
         if (booking.getStatus() == com.excelr.entity.Status.CANCELLED) {
@@ -75,18 +75,31 @@ public class BookingServiceImpl {
         // Proceed with cancellation
         booking.setStatus(com.excelr.entity.Status.CANCELLED);
         booking.setPaymentStatus(com.excelr.entity.PaymentStatus.REFUNDED);
-        
+
         return bookingRepository.save(booking);
     }
+
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
-    public java.util.Map<String, Object> getMovieAnalytics(Long movieId) {
-        List<BookingEntity> bookings = bookingRepository.findByShowTmdbMovieIdAndStatus(movieId, com.excelr.entity.Status.CONFIRMED);
+    public java.util.Map<String, Object> getMovieAnalytics(Long movieId, Long ownerId) {
+        List<BookingEntity> bookings;
+        if (ownerId != null) {
+            bookings = bookingRepository.findByShowTmdbMovieIdAndShowVenueOwnerIdAndStatus(movieId, ownerId,
+                    com.excelr.entity.Status.CONFIRMED);
+        } else {
+            bookings = bookingRepository.findByShowTmdbMovieIdAndStatus(movieId, com.excelr.entity.Status.CONFIRMED);
+        }
         return calculateAnalytics(bookings, true);
     }
 
-    public java.util.Map<String, Object> getEventAnalytics(Long eventId) {
-        List<BookingEntity> bookings = bookingRepository.findByEventIdAndStatus(eventId, com.excelr.entity.Status.CONFIRMED);
+    public java.util.Map<String, Object> getEventAnalytics(Long eventId, Long ownerId) {
+        List<BookingEntity> bookings;
+        if (ownerId != null) {
+            bookings = bookingRepository.findByEventIdAndEventOwnerIdAndStatus(eventId, ownerId,
+                    com.excelr.entity.Status.CONFIRMED);
+        } else {
+            bookings = bookingRepository.findByEventIdAndStatus(eventId, com.excelr.entity.Status.CONFIRMED);
+        }
         return calculateAnalytics(bookings, false);
     }
 
@@ -106,8 +119,9 @@ public class BookingServiceImpl {
             int seatsInBooking = 0;
             try {
                 @SuppressWarnings("unchecked")
-                java.util.Map<String, Object> details = objectMapper.readValue(b.getBookingDetails(), java.util.Map.class);
-                
+                java.util.Map<String, Object> details = objectMapper.readValue(b.getBookingDetails(),
+                        java.util.Map.class);
+
                 if (isMovie) {
                     if (details.containsKey("seats")) {
                         @SuppressWarnings("unchecked")
@@ -118,7 +132,8 @@ public class BookingServiceImpl {
                     // Event: sum zone quantities
                     if (details.containsKey("selectedZones")) {
                         @SuppressWarnings("unchecked")
-                        java.util.Map<String, Object> zones = (java.util.Map<String, Object>) details.get("selectedZones");
+                        java.util.Map<String, Object> zones = (java.util.Map<String, Object>) details
+                                .get("selectedZones");
                         for (Object zoneVal : zones.values()) {
                             if (zoneVal instanceof java.util.Map) {
                                 @SuppressWarnings("unchecked")
@@ -150,23 +165,21 @@ public class BookingServiceImpl {
             }
 
             venueStats.putIfAbsent(venueName, new java.util.HashMap<>(java.util.Map.of(
-                "revenue", java.math.BigDecimal.ZERO,
-                "bookings", 0,
-                "seats", 0
-            )));
+                    "revenue", java.math.BigDecimal.ZERO,
+                    "bookings", 0,
+                    "seats", 0)));
 
             java.util.Map<String, Object> stats = venueStats.get(venueName);
-            stats.put("revenue", ((java.math.BigDecimal) stats.get("revenue")).add(b.getTotalAmount() != null ? b.getTotalAmount() : java.math.BigDecimal.ZERO));
+            stats.put("revenue", ((java.math.BigDecimal) stats.get("revenue"))
+                    .add(b.getTotalAmount() != null ? b.getTotalAmount() : java.math.BigDecimal.ZERO));
             stats.put("bookings", (Integer) stats.get("bookings") + 1);
             stats.put("seats", (Integer) stats.get("seats") + seatsInBooking);
         }
 
         return java.util.Map.of(
-            "totalRevenue", totalRevenue,
-            "totalBookings", totalBookings,
-            "totalSeats", totalSeats,
-            "revenueByVenue", venueStats
-        );
+                "totalRevenue", totalRevenue,
+                "totalBookings", totalBookings,
+                "totalSeats", totalSeats,
+                "revenueByVenue", venueStats);
     }
 }
-
