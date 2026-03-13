@@ -41,6 +41,8 @@ public class SecurityConfig {
                         // Allow error dispatches; otherwise missing static resources can surface as 403
                         .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
                         .requestMatchers("/error").permitAll()
+                        // CORS preflight must be allowed without auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         // Static uploads must be publicly accessible (posters/profile images)
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
@@ -81,9 +83,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*")); // Allow Vercel & all frontends
+        configuration.setAllowedOriginPatterns(List.of(
+                "https://its-show-time.vercel.app",
+                "http://localhost:*",
+                "https://*.vercel.app"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
